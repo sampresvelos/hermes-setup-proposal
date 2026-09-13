@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-family, 'Inter', -apple-system, BlinkMacSystemFont, sans-serif);
+    color: var(--foreground, #e4e4e7);
+    padding: 36px 28px 48px;
+    line-height: 1.55;
+    max-width: 1140px;
+  }
+
+  /* ── Header ── */
+  .doc-header {
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border, #27272a);
+  }
+  .doc-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    margin-bottom: 4px;
+  }
+  .doc-header .subtitle {
+    font-size: 13.5px;
+    color: var(--muted-foreground, #a1a1aa);
+    margin-bottom: 12px;
+  }
+  .meta-row {
+    display: flex;
+    gap: 20px;
+    font-size: 11.5px;
+    color: var(--muted-foreground, #71717a);
+  }
+  .meta-row span { display: flex; align-items: center; gap: 5px; }
+  .meta-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 32px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted-foreground, #a1a1aa);
+    white-space: nowrap;
+  }
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border, #27272a);
+  }
+  .section-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: #3b82f6;
+    background: #3b82f615;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  /* ── Profile Cards ── */
+  .profiles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .profile-card {
+    border: 1px solid var(--border, #27272a);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative;
+  }
+  .profile-card.primary {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.12);
+  }
+  .profile-card.new {
+    border-color: #10b981;
+    border-style: dashed;
+    box-shadow: 0 0 0 1px rgba(16,185,129,0.12);
+  }
+  .profile-card.secondary { opacity: 0.55; }
+  .profile-badge {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .badge-active { background: #3b82f620; color: #60a5fa; }
+  .badge-new { background: #10b98120; color: #6ee7b7; }
+  .badge-relay { background: #a78bfa20; color: #a78bfa; }
+  .badge-archive { background: #71717a20; color: #71717a; }
+  .profile-name { font-size: 15px; font-weight: 650; margin-bottom: 2px; }
+  .profile-model {
+    font-size: 10.5px;
+    color: var(--muted-foreground, #71717a);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 8px;
+  }
+  .profile-desc {
+    font-size: 12px;
+    color: var(--muted-foreground, #a1a1aa);
+    line-height: 1.55;
+  }
+  .profile-platform {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--border, #27272a);
+    color: var(--muted-foreground, #a1a1aa);
+    margin-top: 8px;
+  }
+
+  /* ── Spec Cards (Cron Jobs) ── */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .spec-card {
+    border: 1px solid var(--border, #27272a);
+    border-radius: 11px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .spec-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    border-radius: 11px 0 0 11px;
+  }
+  .spec-card.c-amber::before { background: #f59e0b; }
+  .spec-card.c-orange::before { background: #f97316; }
+  .spec-card.c-purple::before { background: #8b5cf6; }
+  .spec-card.c-green::before { background: #10b981; }
+  .spec-card.c-blue::before { background: #3b82f6; }
+  .spec-card.c-rose::before { background: #f43f5e; }
+
+  .spec-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+  }
+  .spec-name { font-size: 13.5px; font-weight: 650; }
+  .spec-sched {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .sched-daily { background: #f59e0b15; color: #fbbf24; }
+  .sched-weekly { background: #8b5cf615; color: #a78bfa; }
+  .spec-profile {
+    font-size: 10px;
+    color: var(--muted-foreground, #71717a);
+    margin-bottom: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .spec-desc {
+    font-size: 12px;
+    color: var(--muted-foreground, #a1a1aa);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  /* ── Implementation detail blocks ── */
+  .impl-block {
+    background: var(--card, #18181b);
+    border: 1px solid var(--border, #27272a);
+    border-radius: 7px;
+    padding: 10px 12px;
+    margin-top: 8px;
+  }
+  .impl-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-foreground, #71717a);
+    margin-bottom: 5px;
+  }
+  .impl-list {
+    list-style: none;
+    padding: 0;
+  }
+  .impl-list li {
+    font-size: 11.5px;
+    color: var(--muted-foreground, #a1a1aa);
+    padding: 2.5px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.45;
+  }
+  .impl-list li::before {
+    content: '•';
+    position: absolute;
+    left: 2px;
+    color: var(--muted-foreground, #52525b);
+  }
+  .impl-list li code {
+    font-size: 10.5px;
+    background: var(--border, #27272a);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .impl-list li strong {
+    color: var(--foreground, #e4e4e7);
+    font-weight: 600;
+  }
+
+  /* ── Open Questions ── */
+  .open-q {
+    background: #f59e0b08;
+    border: 1px solid #f59e0b30;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 10px;
+  }
+  .open-q-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #fbbf24;
+    margin-bottom: 3px;
+  }
+  .open-q p {
+    font-size: 11.5px;
+    color: var(--muted-foreground, #a1a1aa);
+    line-height: 1.45;
+  }
+
+  /* ── Flow Diagrams ── */
+  .flow-box {
+    border: 1px solid var(--border, #27272a);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-top: 14px;
+  }
+  .flow-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-foreground, #71717a);
+    margin-bottom: 14px;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  .flow-row:last-child { margin-bottom: 0; }
+  .flow-node {
+    padding: 7px 13px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 100px;
+    line-height: 1.4;
+  }
+  .fn-source { background: #3b82f612; border: 1px solid #3b82f635; color: #93c5fd; }
+  .fn-process { background: #f59e0b0e; border: 1px solid #f59e0b30; color: #fcd34d; }
+  .fn-store { background: #10b9810e; border: 1px solid #10b98130; color: #6ee7b7; border-radius: 18px; }
+  .fn-output { background: #a78bfa0e; border: 1px solid #a78bfa30; color: #c4b5fd; }
+  .fn-small { font-size: 9.5px; opacity: 0.7; display: block; margin-top: 1px; }
+  .fa { color: var(--muted-foreground, #52525b); font-size: 15px; padding: 0 7px; user-select: none; }
+  .fa-down {
+    display: flex;
+    justify-content: center;
+    color: var(--muted-foreground, #52525b);
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .flow-branch {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  /* ── Skills (On-Demand) ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .skill-card {
+    border: 1px solid var(--border, #27272a);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .skill-icon { font-size: 18px; margin-bottom: 5px; }
+  .skill-name { font-size: 13px; font-weight: 650; margin-bottom: 3px; }
+  .skill-desc {
+    font-size: 11.5px;
+    color: var(--muted-foreground, #a1a1aa);
+    line-height: 1.45;
+  }
+
+  /* ── Status Chips ── */
+  .integrations {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .int-chip {
+    font-size: 10.5px;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--border, #27272a);
+    color: var(--muted-foreground, #a1a1aa);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .id { width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
+  .id-g { background: #10b981; }
+  .id-y { background: #f59e0b; }
+  .id-b { background: #3b82f6; }
+  .id-p { background: #8b5cf6; }
+  .id-r { background: #ef4444; }
+
+  /* ── Effort Table ── */
+  .effort-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 12px;
+  }
+  .effort-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted-foreground, #71717a);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border, #27272a);
+  }
+  .effort-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border, #18181b);
+    color: var(--muted-foreground, #a1a1aa);
+  }
+  .effort-table td:first-child { color: var(--foreground, #e4e4e7); font-weight: 500; }
+  .effort-table tr:last-child td { border-bottom: none; }
+  .tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .tag-cron { background: #f59e0b15; color: #fbbf24; }
+  .tag-skill { background: #3b82f615; color: #60a5fa; }
+  .tag-profile { background: #10b98115; color: #6ee7b7; }
+  .tag-config { background: #a78bfa15; color: #a78bfa; }
+  .tag-prereq { background: #f43f5e15; color: #fb7185; }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border, #27272a);
+    font-size: 11px;
+    color: var(--muted-foreground, #52525b);
+  }
+  .footer p { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="doc-header">
+  <h1>⚖️ Hermes Agent — Configuration Proposal</h1>
+  <p class="subtitle">Target architecture for Presvelos Law P.C. + Lexiden Inc. &nbsp;·&nbsp; All work items for hermes-associate profile unless noted</p>
+  <div class="meta-row">
+    <span><span class="meta-dot id-g"></span> Prepared: Sep 13, 2026</span>
+    <span>Owner: Sam Presvelos</span>
+    <span>Primary profile: <code style="font-size:11px;background:var(--border,#27272a);padding:1px 5px;border-radius:3px;">hermes-associate</code></span>
+    <span>Model: Claude Opus 4.6 (Bedrock ca-central-1)</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  1 · PROFILES                                           -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">1</span>
+    <h2>Profiles</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="profiles-grid">
+    <div class="profile-card primary">
+      <div class="profile-badge badge-active">Active · Primary</div>
+      <div class="profile-name">hermes-associate</div>
+      <div class="profile-model">opus-4-6-v1 · bedrock · ca-central-1</div>
+      <div class="profile-desc">
+        Primary work profile for all Presvelos Law operations. Handles email, calendar, documents, drafting, expense tracking, follow-up tracking, and all scheduled jobs. Full toolkit, persistent memory, Google Workspace OAuth.
+      </div>
+      <span class="profile-platform">Desktop</span>
+      <span class="profile-platform">CLI</span>
+
+      <div class="impl-block" style="margin-top:10px">
+        <div class="impl-label">Config changes needed</div>
+        <ul class="impl-list">
+          <li>Add <strong>fallback provider</strong>: <code>xai-oauth / grok-4.6</code> — currently empty, Bedrock outage = dead</li>
+          <li>Enable <strong>Google Sheets API</strong> on OAuth project <code>714782241152</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="profile-card new">
+      <div class="profile-badge badge-new">New · To Build</div>
+      <div class="profile-name">research-brief</div>
+      <div class="profile-model">opus-4-6-v1 · bedrock (or grok intake + opus synthesis)</div>
+      <div class="profile-desc">
+        Research intelligence desk. Ingests articles Sam sends himself, extracts and themes them, stores links in Google Sheet, and produces a weekly strategic brief in Google Docs. Action-oriented — filtered through "what does this mean for Presvelos Law / Lexiden."
+      </div>
+      <span class="profile-platform">Desktop</span>
+
+      <div class="impl-block" style="margin-top:10px">
+        <div class="impl-label">Design decisions</div>
+        <ul class="impl-list">
+          <li><strong>Intake method:</strong> Gmail label (to be created — e.g., "Articles" or "Reading List")</li>
+          <li><strong>Store:</strong> Google Sheet (article DB) + Google Doc (running weekly brief)</li>
+          <li><strong>Theme taxonomy:</strong> AI in Legal · Legal Tech / Lexiden · Law Firm Business · Business Strategy · Industry Trends</li>
+          <li>Own memory bank (research themes only, not case details)</li>
+          <li>System prompt tuned for research synthesis, not legal drafting</li>
+          <li>Interactive — Sam can query: "what have I read about X?"</li>
+        </ul>
+      </div>
+
+      <div class="open-q">
+        <div class="open-q-label">⚠ Open question</div>
+        <p>How does Sam send articles to himself? Email to self? Share button? Needs a defined Gmail label for intake. Create label and confirm naming before build.</p>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <div class="profile-badge badge-relay">Relay · WhatsApp</div>
+      <div class="profile-name">lexiden-v3</div>
+      <div class="profile-model">claude-sonnet-5 · anthropic</div>
+      <div class="profile-desc">
+        Lexiden legal search relay. Routes WhatsApp messages to V3 MCP server. No memory, no tools, no drafting — verbatim legal Q&A only.
+      </div>
+      <span class="profile-platform">WhatsApp</span>
+
+      <div class="impl-block" style="margin-top:10px">
+        <div class="impl-label">Status</div>
+        <ul class="impl-list">
+          <li>✅ Fully configured and operational</li>
+          <li>No changes needed</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:8px;">
+    <div class="impl-block">
+      <div class="impl-label">Cleanup — archive or delete</div>
+      <ul class="impl-list">
+        <li><code>lexiden</code> (default profile) — identity conflict: system prompt says "legal search bot" but has full personal assistant memory/config. Strip personal assistant personality or archive entirely.</li>
+        <li><code>lexiden-v1</code> — superseded by lexiden-v3. V1 MCP server still referenced. Archive unless V1 API is still in use.</li>
+        <li><code>~/Desktop/Presvelos-Update-Agent/skills/</code> — external skills dir referenced by multiple profiles but directory is <strong>empty</strong>. Remove from <code>skills.external_dirs</code> or populate.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  2 · SCHEDULED JOBS                                     -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">2</span>
+    <h2>Scheduled Jobs (Cron)</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <p style="font-size:12.5px;color:var(--muted-foreground,#a1a1aa);margin-bottom:16px;">
+    All jobs run on <code style="font-size:11px;background:var(--border,#27272a);padding:1px 5px;border-radius:3px;">hermes-associate</code>. The cron ticker is running (heartbeat confirmed) but <strong>zero jobs are currently configured</strong>. Everything below is new.
+  </p>
+
+  <div class="spec-grid">
+    <!-- Morning Triage -->
+    <div class="spec-card c-amber">
+      <div class="spec-top">
+        <div class="spec-name">📬 Morning Email Triage</div>
+        <div class="spec-sched sched-daily">Daily · 7:30am ET</div>
+      </div>
+      <div class="spec-profile">profile: hermes-associate</div>
+      <div class="spec-desc">Scan unread/recent Gmail threads. Classify by urgency. Summarize each in 1–2 lines. Flag dates detected for proposed calendar events. Includes inbound action item detection (emails where Sam owes a response).</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>Source:</strong> <code>gmail search "is:unread OR newer_than:1d" --max 50</code></li>
+          <li><strong>Classification tiers:</strong> Court/tribunal → ⚠️ Urgent · Opposing counsel → 🔴 High · Client → 🟡 Normal · Admin → ⚪ Low</li>
+          <li><strong>Calendar proposals:</strong> Extract dates from email text, present as "Proposed Events" section. <strong>Never auto-create</strong> — Sam confirms with 👍 per event</li>
+          <li><strong>Inbound action watch:</strong> Detect emails requiring Sam's action (requests, questions, documents to review). Thresholds: 2d ⚠️ / 5d 🔴 / 10d 🚨</li>
+          <li><strong>Output format:</strong> Notion-aesthetic table, grouped by urgency, matter-specific emojis, clickable Gmail thread links (u/0), dates MM/DD/YYYY</li>
+          <li><strong>Delivery:</strong> Desktop app notification</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Follow-Up Tracker -->
+    <div class="spec-card c-orange">
+      <div class="spec-top">
+        <div class="spec-name">👁️ Follow-Up Tracker</div>
+        <div class="spec-sched sched-daily">Daily · 4:00pm ET</div>
+      </div>
+      <div class="spec-profile">profile: hermes-associate</div>
+      <div class="spec-desc">Track threads where a response is owed — outbound (Sam sent, no reply) and inbound (someone sent Sam something requiring action). Persistent state file with aging thresholds.</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>State file:</strong> <code>~/.hermes/profiles/hermes-associate/data/follow-up-tracker.json</code></li>
+          <li><strong>Scan window:</strong> All threads from last 60 days (sent + received)</li>
+          <li><strong>Outbound detection:</strong> Letters to counsel, demand letters, requests for production, "please advise" / "kindly confirm" patterns, delivery-line formatted correspondence</li>
+          <li><strong>Inbound detection:</strong> Court/tribunal emails, client questions, opposing counsel document requests, emails with embedded deadlines</li>
+          <li><strong>Outbound aging:</strong> 3d 👀 Watching → 7d ⚠️ Stale → 14d 🔴 Overdue (suggest follow-up draft) → 30d 🚨 Critical</li>
+          <li><strong>Inbound aging:</strong> 2d ⚠️ → 5d 🔴 → 10d 🚨</li>
+          <li><strong>Resolution:</strong> Auto-resolves when reply detected. Manual snooze/dismiss commands supported</li>
+          <li><strong>Afternoon run:</strong> Stale items only (short alert). Full context in morning triage + weekly review</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Expense Tracker -->
+    <div class="spec-card c-purple">
+      <div class="spec-top">
+        <div class="spec-name">💰 Business Expense Tracker</div>
+        <div class="spec-sched sched-weekly">Friday · 4:00pm ET</div>
+      </div>
+      <div class="spec-profile">profile: hermes-associate</div>
+      <div class="spec-desc">Scan Gmail "Business Expenses" label, extract invoice/receipt data from email body + PDF attachments, append to Google Sheet. Deduplicates by message ID.</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>Gmail label:</strong> <code>Label_24</code> ("Business Expenses") — already exists with sub-labels CPD, Employment Matters</li>
+          <li><strong>Google Sheet:</strong> "Business Expenses 2026" in Presvelos Law Google Workspace. One sheet per calendar year (Jan–Dec), rolls over in January</li>
+          <li><strong>Columns:</strong> Date | Vendor | Description | Category | Pre-Tax | HST | Total | Payment Method | Source | Receipt # | Message ID</li>
+          <li><strong>Category taxonomy:</strong> Legal Research / Subscriptions · Professional Dues & Insurance · Office / Rent / Utilities · Software / Technology · Courier / Postage / Filing Fees · Travel · Meals & Entertainment · Marketing / Business Development · Professional Development / CLE · Telecommunications · Office Supplies · Court Fees / Disbursements · Other</li>
+          <li><strong>Receipt parsing:</strong> HTML body extraction (Stripe, Apple, Google receipts) + PDF attachment parsing via Docling for invoices</li>
+          <li><strong>HST breakout:</strong> Extract pre-tax, HST/GST, and total separately for ITC recovery</li>
+          <li><strong>Dedup:</strong> Gmail message ID stored in column K — skip already-logged messages</li>
+          <li><strong>Script:</strong> <code>~/.hermes/profiles/hermes-associate/scripts/expense_tracker.py</code> (written, ready to test)</li>
+        </ul>
+      </div>
+
+      <div class="impl-block" style="margin-top:6px;">
+        <div class="impl-label">Prerequisites</div>
+        <ul class="impl-list">
+          <li>Enable Google Sheets API on project <code>714782241152</code></li>
+          <li>Create the Sheet and run initial backfill: <code>--backfill --max 200</code></li>
+          <li>May need OAuth re-auth if Sheets scope wasn't included in original grant</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Weekly Review -->
+    <div class="spec-card c-purple">
+      <div class="spec-top">
+        <div class="spec-name">📋 Weekly Matter Review</div>
+        <div class="spec-sched sched-weekly">Friday · 4:30pm ET</div>
+      </div>
+      <div class="spec-profile">profile: hermes-associate</div>
+      <div class="spec-desc">End-of-week rollup: all open stale threads, upcoming calendar deadlines, matters needing attention, what resolved this week.</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>Sources:</strong> Follow-up tracker state file + Google Calendar (next 7/30/60 days) + week's email activity</li>
+          <li><strong>Output:</strong> Grouped by matter: what resolved, what's still open, what's about to go critical next week</li>
+          <li><strong>Runs after expense tracker</strong> (4:30pm) so expenses are current when review generates</li>
+          <li><strong>Delivery:</strong> Desktop notification</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CanLII Monitor -->
+    <div class="spec-card c-green">
+      <div class="spec-top">
+        <div class="spec-name">📖 CanLII / Legal Blog Monitor</div>
+        <div class="spec-sched sched-weekly">Monday · 8:00am ET</div>
+      </div>
+      <div class="spec-profile">profile: hermes-associate</div>
+      <div class="spec-desc">RSS scan of CanLII feeds and legal blogs. Keyword-filtered to practice areas. Opus-summarized digest of relevant decisions only.</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>RSS sources:</strong> CanLII ONSC feed, Ontario LTB, CAIRP insolvency publications, selected legal blogs (Slaw, etc.)</li>
+          <li><strong>Keyword pre-filter:</strong> construction lien | receivership | insolvency | overholding | commercial tenancy | insurance coverage | shareholder oppression — filter <em>before</em> summarizing to avoid burning tokens</li>
+          <li><strong>Output:</strong> 1-paragraph summary per relevant decision with citation, link, and practice-area tag</li>
+          <li><strong>Skills:</strong> <code>blogwatcher</code>, <code>rss-feeds</code></li>
+          <li><strong>Delivery:</strong> Desktop notification (Monday morning, start of week)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Research Brief -->
+    <div class="spec-card c-blue">
+      <div class="spec-top">
+        <div class="spec-name">🧠 Strategic Research Brief</div>
+        <div class="spec-sched sched-weekly">Weekly · TBD</div>
+      </div>
+      <div class="spec-profile">profile: research-brief</div>
+      <div class="spec-desc">Ingest articles Sam shares with himself. Theme and store in Google Sheet. Produce weekly strategic intelligence brief in Google Doc — action-oriented, filtered through "what can Sam do with this."</div>
+
+      <div class="impl-block">
+        <div class="impl-label">Implementation spec</div>
+        <ul class="impl-list">
+          <li><strong>Intake:</strong> Gmail label scan (label TBD — e.g., "Reading List")</li>
+          <li><strong>Per-article processing:</strong> Extract full content via <code>web_extract</code> from URL, generate 2–3 line summary + key takeaway + "applicable to" tag (Presvelos Law / Lexiden / both)</li>
+          <li><strong>Article DB:</strong> Google Sheet — Date | Title | URL | Theme | Summary | Key Takeaway | Applicable To | Message ID</li>
+          <li><strong>Theme taxonomy:</strong> AI in Legal Practice · Legal Tech / Lexiden · Law Firm Business · Business Strategy · Industry Trends</li>
+          <li><strong>Weekly brief:</strong> Google Doc (running, newest week on top). Not a link dump — <strong>synthesis</strong>: dominant themes, emerging patterns, cross-article connections, specific action items for the firm or Lexiden</li>
+          <li><strong>Profile has its own memory</strong> — tracks evolving themes over time, remembers what Sam has been reading about across weeks/months</li>
+        </ul>
+      </div>
+
+      <div class="open-q">
+        <div class="open-q-label">⚠ Open — article intake method</div>
+        <p>Need to confirm: does Sam email article links to himself? Create a dedicated Gmail label (e.g., "Reading List" or "Articles") for the intake pipe. Same pattern as Business Expenses — label-based scan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  3 · ON-DEMAND SKILLS                                   -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">3</span>
+    <h2>On-Demand Capabilities (Interactive)</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="skills-grid">
+    <div class="skill-card">
+      <div class="skill-icon">🎙️</div>
+      <div class="skill-name">Voice → Tasks</div>
+      <div class="skill-desc">Dictate via Ctrl+B (Whisper STT). Hermes parses into discrete action items with deadlines and matter tags. Pushes to Apple Reminders, organized by matter-named lists.</div>
+      <div class="impl-block" style="margin-top:8px">
+        <ul class="impl-list">
+          <li>Skill: <code>apple-reminders</code> (exists)</li>
+          <li>Create matter-named Reminders lists on first use</li>
+          <li>Explicit invocation only — not passive listening</li>
+          <li>Confirm parsed tasks before pushing</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="skill-card">
+      <div class="skill-icon">📂</div>
+      <div class="skill-name">Matter-Folder Index</div>
+      <div class="skill-desc">Maintained reference mapping matter names to folder paths. Enables instant document retrieval from Desktop, Downloads, and matter folders without full-disk search.</div>
+      <div class="impl-block" style="margin-top:8px">
+        <ul class="impl-list">
+          <li>New skill: <code>matter-folder-index</code></li>
+          <li>Reference file: <code>references/folder-map.md</code></li>
+          <li>Seed with known paths from memory (Receivership, Dirty Bird, etc.)</li>
+          <li>Grows as Sam references new matters</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="skill-card">
+      <div class="skill-icon">📄</div>
+      <div class="skill-name">Document Parsing</div>
+      <div class="skill-desc">Docling (default, local) for born-digital PDFs. Azure Document Intelligence for bad scans/handwriting (with Sam's approval). Markdown output beside every source file.</div>
+      <div class="impl-block" style="margin-top:8px">
+        <ul class="impl-list">
+          <li>Skill: <code>ocr-and-documents</code> (exists, configured)</li>
+          <li>Script: <code>parse-local.sh</code> (Docling wrapper)</li>
+          <li>No changes needed — operational</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  4 · DATA FLOWS                                         -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">4</span>
+    <h2>Data Flows</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="flow-box">
+    <div class="flow-title">A · Expense Pipeline (Friday 4pm)</div>
+    <div class="flow-row">
+      <div class="flow-node fn-source">📧 Gmail<span class="fn-small">label: Business Expenses</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🔍 expense_tracker.py<span class="fn-small">Parse body + PDF attachments</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🏷️ Categorize<span class="fn-small">Vendor → category map</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-store">📊 Google Sheet<span class="fn-small">Business Expenses 2026</span></div>
+    </div>
+  </div>
+
+  <div class="flow-box">
+    <div class="flow-title">B · Email Triage + Follow-Up Pipeline (Daily)</div>
+    <div class="flow-row">
+      <div class="flow-node fn-source">📧 Gmail<span class="fn-small">All threads (unread + 1d)</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🧠 Triage Agent<span class="fn-small">Classify · extract dates · detect action items</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-output">📋 Daily Digest<span class="fn-small">Desktop notification</span></div>
+    </div>
+    <div class="fa-down">↓</div>
+    <div class="flow-branch">
+      <div class="flow-node fn-store">📁 follow-up-tracker.json<span class="fn-small">Persistent state · aging</span></div>
+      <div class="flow-node fn-store">📅 Google Calendar<span class="fn-small">Proposed events (👍 to confirm)</span></div>
+    </div>
+  </div>
+
+  <div class="flow-box">
+    <div class="flow-title">C · Legal Monitor Pipeline (Monday 8am)</div>
+    <div class="flow-row">
+      <div class="flow-node fn-source">📡 CanLII RSS<span class="fn-small">ONSC · LTB · CAIRP</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🔎 Keyword Filter<span class="fn-small">Practice area terms only</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">📝 Opus Summary<span class="fn-small">1-paragraph + citation</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-output">📬 Monday Digest<span class="fn-small">Desktop notification</span></div>
+    </div>
+  </div>
+
+  <div class="flow-box">
+    <div class="flow-title">D · Research Intelligence Pipeline (Weekly)</div>
+    <div class="flow-row">
+      <div class="flow-node fn-source">📧 Gmail<span class="fn-small">label: Reading List (TBD)</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🔗 Extract Article<span class="fn-small">web_extract URL content</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-process">🏷️ Theme + Summarize<span class="fn-small">Takeaway · applicable to</span></div>
+      <div class="fa">→</div>
+      <div class="flow-node fn-store">📊 Article DB<span class="fn-small">Google Sheet</span></div>
+    </div>
+    <div class="fa-down">↓</div>
+    <div class="flow-branch">
+      <div class="flow-node fn-output" style="min-width:220px;">📄 Weekly Strategic Brief<span class="fn-small">Google Doc — themes, patterns, action items</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  5 · INTEGRATIONS                                       -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">5</span>
+    <h2>Connected Services</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="integrations">
+    <div class="int-chip"><span class="id id-g"></span> Gmail (OAuth)</div>
+    <div class="int-chip"><span class="id id-g"></span> Google Calendar</div>
+    <div class="int-chip"><span class="id id-y"></span> Google Sheets (needs API enable)</div>
+    <div class="int-chip"><span class="id id-g"></span> Google Drive</div>
+    <div class="int-chip"><span class="id id-g"></span> Google Docs</div>
+    <div class="int-chip"><span class="id id-g"></span> Apple Reminders</div>
+    <div class="int-chip"><span class="id id-g"></span> WhatsApp Gateway</div>
+    <div class="int-chip"><span class="id id-b"></span> Whisper STT (local)</div>
+    <div class="int-chip"><span class="id id-b"></span> Docling OCR (local)</div>
+    <div class="int-chip"><span class="id id-p"></span> CanLII RSS feeds</div>
+    <div class="int-chip"><span class="id id-p"></span> Lexiden V3 MCP server</div>
+    <div class="int-chip"><span class="id id-b"></span> AWS Bedrock (ca-central-1)</div>
+    <div class="int-chip"><span class="id id-r"></span> Azure Document Intelligence (on request)</div>
+  </div>
+  <p style="font-size:11px;color:var(--muted-foreground,#52525b);margin-top:8px;">
+    <span class="id id-g" style="vertical-align:middle;"></span> Active &nbsp;
+    <span class="id id-y" style="vertical-align:middle;"></span> Needs setup &nbsp;
+    <span class="id id-b" style="vertical-align:middle;"></span> Local/offline &nbsp;
+    <span class="id id-p" style="vertical-align:middle;"></span> External feed &nbsp;
+    <span class="id id-r" style="vertical-align:middle;"></span> Approval required
+  </p>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  6 · BUILD PLAN                                         -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">6</span>
+    <h2>Build Plan — Priority Order</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <table class="effort-table">
+    <thead>
+      <tr>
+        <th style="width:28%;">Item</th>
+        <th style="width:10%;">Type</th>
+        <th style="width:10%;">Effort</th>
+        <th style="width:12%;">Depends On</th>
+        <th style="width:40%;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Enable Sheets API</td>
+        <td><span class="tag tag-prereq">Prereq</span></td>
+        <td>2 min</td>
+        <td>Sam (GCP console)</td>
+        <td>One-click enable at console.developers.google.com. May need OAuth re-auth for Sheets scope.</td>
+      </tr>
+      <tr>
+        <td>Add fallback provider</td>
+        <td><span class="tag tag-config">Config</span></td>
+        <td>1 min</td>
+        <td>—</td>
+        <td>Add <code>fallback_providers: [{provider: xai-oauth, model: grok-4.6}]</code> to hermes-associate config.</td>
+      </tr>
+      <tr>
+        <td>Business Expense Tracker</td>
+        <td><span class="tag tag-cron">Cron</span></td>
+        <td>30 min</td>
+        <td>Sheets API</td>
+        <td>Script written. Create Sheet, run backfill, set up cron. Vendor category mapping ready.</td>
+      </tr>
+      <tr>
+        <td>Morning Email Triage</td>
+        <td><span class="tag tag-cron">Cron</span></td>
+        <td>45 min</td>
+        <td>—</td>
+        <td>Highest daily impact. Builds the summary + proposed calendar events. Output template to match Sam's display preferences.</td>
+      </tr>
+      <tr>
+        <td>Follow-Up Tracker</td>
+        <td><span class="tag tag-cron">Cron</span></td>
+        <td>60 min</td>
+        <td>Email Triage</td>
+        <td>Most important for malpractice prevention. State file design + email pattern detection + aging logic.</td>
+      </tr>
+      <tr>
+        <td>Weekly Review</td>
+        <td><span class="tag tag-cron">Cron</span></td>
+        <td>30 min</td>
+        <td>Follow-Up Tracker</td>
+        <td>Rolls up data from tracker + calendar. Friday afternoon delivery.</td>
+      </tr>
+      <tr>
+        <td>CanLII / Legal Monitor</td>
+        <td><span class="tag tag-cron">Cron</span></td>
+        <td>30 min</td>
+        <td>—</td>
+        <td>RSS feed discovery + keyword filter + summary generation. Monday delivery.</td>
+      </tr>
+      <tr>
+        <td>Matter-Folder Index</td>
+        <td><span class="tag tag-skill">Skill</span></td>
+        <td>15 min</td>
+        <td>—</td>
+        <td>Seed from known paths in memory. Reference file grows organically.</td>
+      </tr>
+      <tr>
+        <td>Voice → Tasks</td>
+        <td><span class="tag tag-skill">Skill</span></td>
+        <td>20 min</td>
+        <td>—</td>
+        <td>Wire Whisper STT → task parser → Apple Reminders. Create matter-named lists on first use.</td>
+      </tr>
+      <tr>
+        <td>Research Brief profile</td>
+        <td><span class="tag tag-profile">Profile</span></td>
+        <td>60 min</td>
+        <td>Article intake method confirmed</td>
+        <td>New profile + Gmail label + Sheet + Doc + cron job + system prompt. Blocked on confirming how Sam sends articles to himself.</td>
+      </tr>
+      <tr>
+        <td>Profile cleanup</td>
+        <td><span class="tag tag-config">Config</span></td>
+        <td>15 min</td>
+        <td>—</td>
+        <td>Archive lexiden + lexiden-v1. Clean empty external_dirs. Strip stale personality defs.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  FOOTER                                                 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="footer">
+  <p><strong>Design principles:</strong> No auto-send of emails. No auto-create of calendar events. All scheduled outputs are summaries/proposals — Sam confirms before external action. Calendar events always require explicit 👍 approval.</p>
+  <p><strong>Data residency:</strong> All processing on macOS (local) or AWS ca-central-1 (Bedrock). Google Workspace data stays in Google. Azure DI only on explicit approval. No data sent to third parties without consent.</p>
+  <p><strong>Total new cron jobs:</strong> 6 &nbsp;·&nbsp; <strong>New profiles:</strong> 1 (research-brief) &nbsp;·&nbsp; <strong>New skills:</strong> 2 (matter-folder-index, voice-to-tasks) &nbsp;·&nbsp; <strong>Profiles to archive:</strong> 2</p>
+</div>
+
+</body>
+</html>
